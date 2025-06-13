@@ -21,5 +21,5 @@ export class Student {
   phoneNumber: string;
 
   @Column()
-  dob: string;
+  DateOfBirth: string;
 } 
