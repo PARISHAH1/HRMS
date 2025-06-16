@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
+
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: 'srv1536.hstgr.io',
@@ -11,4 +12,9 @@ export const databaseConfig: TypeOrmModuleOptions = {
   synchronize: true,
   connectTimeout: 60000,
   logging: true,
+ 
+  maxQueryExecutionTime: 100,
+  extra: {
+    connectionLimit: 10
+  }
 }; 
