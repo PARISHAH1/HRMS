@@ -2,11 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-
-interface Bucket {
-  id: string;
-  name: string;
-}
+import { createToDo } from '@/services/todoService';
+import { getAllBuckets, Bucket } from '@/services/bucketService';
 
 export default function AddTaskPage() {
   const router = useRouter();
@@ -29,12 +26,7 @@ export default function AddTaskPage() {
           return;
         }
 
-        const response = await fetch('/api/buckets', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        const data = await response.json();
+        const data = await getAllBuckets();
         setBuckets(data);
       } catch (error) {
         console.error('Error fetching buckets:', error);
@@ -55,16 +47,15 @@ export default function AddTaskPage() {
         return;
       }
 
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify(formData)
+      const newTodo = await createToDo({
+        Title: formData.title,
+        Description: formData.description,
+        BucketID: formData.bucketId ? Number(formData.bucketId) : undefined,
+        DueDateTime: formData.dueDate ? new Date(formData.dueDate) : undefined,
+        Priority: formData.priority,
       });
 
-      if (response.ok) {
+      if (newTodo) {
         router.push('/tasks');
       } else {
         throw new Error('Failed to create task');
@@ -117,15 +108,14 @@ export default function AddTaskPage() {
               </label>
               <select
                 id="bucketId"
-                required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 value={formData.bucketId}
                 onChange={(e) => setFormData({ ...formData, bucketId: e.target.value })}
               >
                 <option value="">Select a bucket</option>
                 {buckets.map((bucket) => (
-                  <option key={bucket.id} value={bucket.id}>
-                    {bucket.name}
+                  <option key={bucket.BucketId} value={bucket.BucketId}>
+                    {bucket.BucketName}
                   </option>
                 ))}
               </select>

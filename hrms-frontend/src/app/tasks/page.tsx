@@ -1,48 +1,76 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  dueDate: string;
-}
+import { useState, useEffect } from 'react';
+import { ToDo, getAllToDos, deleteToDo } from '@/services/todoService';
+import { Bucket, getAllBuckets } from '@/services/bucketService';
 
 export default function TasksPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [todos, setTodos] = useState<ToDo[]>([]);
+  const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const accessToken = sessionStorage.getItem('accessToken');
-    if (!accessToken) {
-      router.push('/login');
-      return;
-    }
-
-    // TODO: Replace with actual API call
-    const fetchTasks = async () => {
+    const fetchTasksAndBuckets = async () => {
       try {
-        // Simulated API call
-        const response = await fetch('/api/tasks', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        const data = await response.json();
-        setTasks(data);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
+        const accessToken = sessionStorage.getItem('accessToken');
+        if (!accessToken) {
+          router.push('/login');
+          return;
+        }
+
+        const [todosData, bucketsData] = await Promise.all([
+          getAllToDos(),
+          getAllBuckets()
+        ]);
+        setTodos(todosData);
+        setBuckets(bucketsData);
+      } catch (err) {
+        console.error('Error fetching tasks or buckets:', err);
+        setError('Failed to load tasks or buckets.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchTasksAndBuckets();
   }, [router]);
+
+  const getBucketName = (bucketId?: number) => {
+    if (!bucketId) return 'N/A';
+    const bucket = buckets.find(b => b.BucketId === bucketId);
+    return bucket ? bucket.BucketName : 'N/A';
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteToDo(id);
+        setTodos(todos.filter(todo => todo.ToDoId !== id));
+      } catch (err) {
+        console.error('Error deleting task:', err);
+        alert('Failed to delete task. Please try again.');
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto text-center py-4">Loading tasks...</div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto text-center py-4 text-red-600">{error}</div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
@@ -58,34 +86,35 @@ export default function TasksPage() {
             </button>
           </div>
 
-          {loading ? (
-            <div className="text-center py-4">Loading tasks...</div>
-          ) : tasks.length === 0 ? (
+          {todos.length === 0 ? (
             <div className="text-center py-4 text-gray-500">No tasks found</div>
           ) : (
-            <div className="grid gap-4">
-              {tasks.map((task) => (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {todos.map((todo) => (
                 <div
-                  key={task.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  key={todo.ToDoId}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                      <p className="text-gray-600 mt-1">{task.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-full text-sm ${
-                        task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {task.status}
-                      </span>
-                    </div>
-                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">{todo.Title}</h3>
+                  <p className="text-gray-600 mt-1">{todo.Description}</p>
                   <div className="mt-2 text-sm text-gray-500">
-                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                    <p>Bucket: {getBucketName(todo.BucketID)}</p>
+                    <p>Due Date: {todo.DueDateTime ? new Date(todo.DueDateTime).toLocaleDateString() : 'N/A'}</p>
+                    <p>Priority: {todo.Priority}</p>
+                  </div>
+                  <div className="mt-4 flex space-x-2">
+                    <button
+                      onClick={() => router.push(`/tasks/edit/${todo.ToDoId}`)}
+                      className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => todo.ToDoId && handleDelete(todo.ToDoId)}
+                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
