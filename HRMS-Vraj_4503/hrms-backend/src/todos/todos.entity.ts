@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Bucket } from '../bucket/bucket.entity';
 import { User } from '../user/user.entity';
 import { Company } from '../company/company.entity';
@@ -32,23 +38,11 @@ export class ToDos {
   @Column({ type: 'varchar', length: 255, nullable: true })
   FilePath: string;
 
-  @Column({ type: 'boolean', default: false })
-  ReturnFileFlag: boolean;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  ReturnFilePath: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  Recording: string;
-
   @Column({ type: 'varchar', length: 255, nullable: true })
   Title: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   Description: string;
-
-  @Column({ type: 'boolean', default: false })
-  Repeted: boolean;
 
   @Column({ nullable: true })
   CID: number;
@@ -56,7 +50,11 @@ export class ToDos {
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   created: Date;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   updated: Date;
 
   @Column({ nullable: true })
