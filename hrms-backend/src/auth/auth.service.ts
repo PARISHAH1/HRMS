@@ -38,8 +38,12 @@ export class AuthService {
   async login(user: any) {
     try {
       const payload = { 
-        email: user.email, 
-        sub: user.UID
+        email: user.Email,
+        sub: user.UID,
+        uid: user.UID,
+        cid: user.CID,
+        firstName: user.Fname,
+        lastName: user.Lname
       };
       
       const jwtToken = this.jwtService.sign(payload);
@@ -50,7 +54,13 @@ export class AuthService {
       
       return {
         access_token: encryptedToken,
-        user: payload
+        user: {
+          uid: user.UID,
+          cid: user.CID,
+          firstName: user.Fname,
+          lastName: user.Lname,
+          email: user.Email
+        }
       };
     } catch (error) {
       console.error('Login error:', error);

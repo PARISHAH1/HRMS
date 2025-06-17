@@ -14,7 +14,7 @@ export class Company {
   @Column({ name: 'Strength', length: 50 })
   strength: string;
 
-  @Column({ name: 'CreatedByUser' })
+  @Column({ name: 'CreatedByUser', nullable: true })
   createdByUser: number;
 
   @CreateDateColumn({ name: 'created' })
@@ -23,7 +23,7 @@ export class Company {
   @UpdateDateColumn({ name: 'updated' })
   updated: Date;
 
-  @Column({ name: 'CreatedBy' })
+  @Column({ name: 'CreatedBy', nullable: true })
   createdBy: number;
 
   @Column({ name: 'UpdatedBy', nullable: true })

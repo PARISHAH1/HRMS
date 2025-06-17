@@ -8,7 +8,7 @@ const SignupPage = () => {
   const [formData, setFormData] = useState({
     
     Email: '',
-    password: '',
+    Password: '',
     Fname: '',
     Lname: '',
     Mname: '',
@@ -17,17 +17,14 @@ const SignupPage = () => {
     DepartmentID: 1,
     UserType: 'Employee',
     Phone: '',
-    CID: '',
     
     
     companyName: '',
     location: '',
     strength: '',
-    createdByUser: '',
-    createdBy: ''
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -48,8 +45,7 @@ const SignupPage = () => {
           companyName: formData.companyName,
           location: formData.location,
           strength: formData.strength,
-          createdByUser: 1,
-          createdBy: 1
+          
         }),
       });
 
@@ -59,7 +55,7 @@ const SignupPage = () => {
 
       const companyData = await companyResponse.json();
       
-      const formattedDate = new Date(formData.DOB).toISOString().split('T')[0];
+      const formattedDate = formData.DOB ? new Date(formData.DOB).toISOString() : '';
       
       const userResponse = await fetch('http://localhost:5000/user', {
         method: 'POST',
@@ -68,16 +64,16 @@ const SignupPage = () => {
         },
         body: JSON.stringify({
           Email: formData.Email,
-          password: formData.password,
+          Password: formData.Password, 
           Fname: formData.Fname,
           Lname: formData.Lname,
-          Mname: formData.Mname,
+          Mname: formData.Mname || null,
           DOB: formattedDate,
-          StatusType: formData.StatusType,
-          DepartmentID: formData.DepartmentID,
+          StatusType: formData.StatusType === 'Active' ? 'A' : 'I',
+          DepartmentID: Number(formData.DepartmentID),
           UserType: formData.UserType,
           Phone: formData.Phone,
-          CID: companyData.cid
+          CID: companyData.CID, 
         }),
       });
 
@@ -175,13 +171,26 @@ const SignupPage = () => {
                 <label className="block text-sm font-medium text-gray-700">Password</label>
                 <input 
                   type="password" 
-                  name="password" 
+                  name="Password" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="Create a strong password"
-                  value={formData.password}
+                  value={formData.Password}
                   onChange={handleInputChange}
                   required 
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Status</label>
+                <select 
+                  id="StatusType" 
+                  name="StatusType" 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.StatusType}
+                  onChange={handleInputChange}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
               </div>
             </div>
           </div>
@@ -198,7 +207,7 @@ const SignupPage = () => {
                   placeholder="Enter company name"
                   value={formData.companyName}
                   onChange={handleInputChange}
-                  required 
+                  required
                 />
               </div>
               <div>
@@ -210,20 +219,19 @@ const SignupPage = () => {
                   placeholder="Enter company location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  required 
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Company Size</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   name="strength" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="Enter number of employees" 
-                  min="1"
+                  placeholder="Enter company size"
                   value={formData.strength}
                   onChange={handleInputChange}
-                  required 
+                  required
                 />
               </div>
             </div>

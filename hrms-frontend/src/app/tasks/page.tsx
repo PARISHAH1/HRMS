@@ -16,13 +16,14 @@ export default function TasksPage() {
     const fetchTasksAndBuckets = async () => {
       try {
         const accessToken = sessionStorage.getItem('accessToken');
+        const cid = sessionStorage.getItem('cid');
         if (!accessToken) {
           router.push('/login');
           return;
         }
 
         const [todosData, bucketsData] = await Promise.all([
-          getAllToDos(),
+          getAllToDos(cid ? Number(cid) : undefined),
           getAllBuckets()
         ]);
         setTodos(todosData);
@@ -89,7 +90,7 @@ export default function TasksPage() {
           {todos.length === 0 ? (
             <div className="text-center py-4 text-gray-500">No tasks found</div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {todos.map((todo) => (
                 <div
                   key={todo.ToDoId}

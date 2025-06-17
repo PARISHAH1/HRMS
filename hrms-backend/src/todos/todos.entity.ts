@@ -32,14 +32,7 @@ export class ToDos {
   @Column({ type: 'varchar', length: 255, nullable: true })
   FilePath: string;
 
-  @Column({ type: 'boolean', default: false })
-  ReturnFileFlag: boolean;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  ReturnFilePath: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  Recording: string;
+ 
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   Title: string;

@@ -30,8 +30,8 @@ export const createToDo = async (todo: Partial<ToDo>): Promise<ToDo> => {
   return response.data;
 };
 
-export const getAllToDos = async (): Promise<ToDo[]> => {
-  const response = await axios.get<ToDo[]>(API_URL);
+export const getAllToDos = async (cid?: number): Promise<ToDo[]> => {
+  const response = await axios.get<ToDo[]>(`${API_URL}${cid ? `?cid=${cid}` : ''}`);
   return response.data;
 };
 

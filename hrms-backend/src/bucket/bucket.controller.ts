@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, Put, Param, Query } from '@nestjs/common';
 import { BucketService } from './bucket.service';
 import { Bucket } from './bucket.entity';
 
@@ -12,7 +12,15 @@ export class BucketController {
   }
 
   @Get()
-  async getAllBuckets(): Promise<Bucket[]> {
-    return this.bucketService.getAllBuckets();
+  async getAllBuckets(@Query('cid') cid?: number): Promise<Bucket[]> {
+    return this.bucketService.getAllBuckets(cid);
+  }
+
+  @Put(':id')
+  async updateBucket(
+    @Param('id') id: number,
+    @Body() bucket: Partial<Bucket>
+  ): Promise<Bucket> {
+    return this.bucketService.updateBucket(id, bucket);
   }
 }

@@ -1,72 +1,164 @@
 import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { encrypt, decrypt } from '../utils/encryption';
 import * as bcrypt from 'bcrypt';
+import { mysqlPool } from '../config/mysql.config';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  constructor() {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = this.userRepository.create({
-      ...createUserDto,
-      Password: encrypt(createUserDto.password),
-    });
-    return this.userRepository.save(user);
+    console.log('Received CreateUserDto:', createUserDto);
+    const { Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID } = createUserDto;
+    const encryptedPassword = encrypt(Password);
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [result] = await connection.execute(
+        `INSERT INTO user (Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, created, updated, CreatedBy, UpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)`,
+        [Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, encryptedPassword, Email, Phone, CID, null, null]
+      );
+
+      const insertedId = (result as any).insertId;
+      const [rows] = await connection.execute(`SELECT * FROM user WHERE UID = ?`, [insertedId]);
+      const newUser: User = (rows as User[])[0];
+
+      
+      const [updateResult] = await connection.execute(
+        `UPDATE user SET CreatedBy = ?, UpdatedBy = ? WHERE UID = ?`,
+        [newUser.UID, newUser.UID, newUser.UID]
+      );
+
+      if ((updateResult as any).affectedRows === 0) {
+        console.warn(`Could not set CreatedBy/UpdatedBy for user ${newUser.UID}`);
+      }
+
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw new BadRequestException('Failed to create user.');
+    } finally {
+      connection.release();
+    }
   }
 
   async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [rows] = await connection.execute('SELECT * FROM user');
+      return rows as User[];
+    } catch (error) {
+      console.error('Error fetching all users:', error);
+      throw new BadRequestException('Failed to fetch users.');
+    } finally {
+      connection.release();
+    }
   }
 
   async findOne(UID: number): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { UID } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${UID} not found`);
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [rows] = await connection.execute('SELECT * FROM user WHERE UID = ?', [UID]);
+      const user = (rows as User[])[0];
+      if (!user) {
+        throw new NotFoundException(`User with ID ${UID} not found`);
+      }
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user with ID ${UID}:`, error);
+      throw new BadRequestException('Failed to fetch user.');
+    } finally {
+      connection.release();
     }
-    return user;
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { Email: email } });
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [rows] = await connection.execute('SELECT * FROM user WHERE Email = ?', [email]);
+      return (rows as User[])[0] || null;
+    } catch (error) {
+      console.error(`Error fetching user by email ${email}:`, error);
+      throw new BadRequestException('Failed to fetch user by email.');
+    } finally {
+      connection.release();
+    }
   }
 
   async update(UID: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(UID);
-    
-    // If password is being updated, encrypt it
-    if (updateUserDto.Password) {
-      updateUserDto.Password = await bcrypt.hash(updateUserDto.Password, 10);
+    const connection = await mysqlPool.getConnection();
+    try {
+      const existingUser = await this.findOne(UID);
+      if (!existingUser) {
+        throw new NotFoundException(`User with ID ${UID} not found`);
+      }
+
+      let encryptedPassword = existingUser.Password;
+      if (updateUserDto.Password) {
+        encryptedPassword = encrypt(updateUserDto.Password);
+      }
+
+      const fieldsToUpdate = Object.keys(updateUserDto).filter(key => updateUserDto[key] !== undefined && key !== 'Password');
+      const setClauses = fieldsToUpdate.map(key => `\`${key}\` = ?`).join(', ');
+      const values = fieldsToUpdate.map(key => (updateUserDto as any)[key]);
+      values.push(encryptedPassword);
+      values.push(UID);
+
+      const [result] = await connection.execute(
+        `UPDATE user SET ${setClauses ? `${setClauses}, ` : ''}\`Password\` = ?, \`updated\` = NOW(), \`UpdatedBy\` = ? WHERE UID = ?`,
+        values
+      );
+
+      if ((result as any).affectedRows === 0) {
+        throw new NotFoundException(`User with ID ${UID} not found`);
+      }
+      const [rows] = await connection.execute(`SELECT * FROM user WHERE UID = ?`, [UID]);
+      return (rows as User[])[0];
+    } catch (error) {
+      console.error(`Error updating user with ID ${UID}:`, error);
+      throw new BadRequestException('Failed to update user.');
+    } finally {
+      connection.release();
     }
-    
-    this.userRepository.merge(user, updateUserDto);
-    return this.userRepository.save(user);
   }
 
   async remove(UID: number): Promise<void> {
-    const user = await this.findOne(UID);
-    await this.userRepository.remove(user);
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [result] = await connection.execute('DELETE FROM user WHERE UID = ?', [UID]);
+      if ((result as any).affectedRows === 0) {
+        throw new NotFoundException(`User with ID ${UID} not found`);
+      }
+    } catch (error) {
+      console.error(`Error removing user with ID ${UID}:`, error);
+      throw new BadRequestException('Failed to remove user.');
+    } finally {
+      connection.release();
+    }
   }
 
   async login(loginUserDto: LoginUserDto): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { Email: loginUserDto.email } });
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const connection = await mysqlPool.getConnection();
+    try {
+      const user = await this.findOneByEmail(loginUserDto.email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    const decryptedPassword = decrypt(user.Password);
-    if (loginUserDto.password !== decryptedPassword) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+      const decryptedPassword = decrypt(user.Password);
+      if (loginUserDto.password !== decryptedPassword) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    return user;
+      return user;
+    } catch (error) {
+      console.error('Error during user login:', error);
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 } 

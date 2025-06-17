@@ -24,7 +24,6 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -45,8 +44,20 @@ export default function LoginPage() {
       if (loginResponse.ok) {
         const loginData = await loginResponse.json();
         const encryptedToken = createEncryptedToken(loginData.access_token);
+        
+        // Store tokens
         sessionStorage.setItem('accessToken', loginData.access_token);
         sessionStorage.setItem('encryptedToken', encryptedToken);
+        
+        // Store user details
+        if (loginData.user) {
+          sessionStorage.setItem('uid', loginData.user.uid);
+          sessionStorage.setItem('cid', loginData.user.cid);
+          sessionStorage.setItem('firstName', loginData.user.firstName);
+          sessionStorage.setItem('lastName', loginData.user.lastName);
+          sessionStorage.setItem('email', loginData.user.email);
+        }
+        
         router.push('/dashboard');
       } else {
         setError('Invalid credentials');

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Put, Delete, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Put, Delete, NotFoundException, Query } from '@nestjs/common';
 import { ToDosService } from './todos.service';
 import { ToDos } from './todos.entity';
 
@@ -12,8 +12,8 @@ export class ToDosController {
   }
 
   @Get()
-  async getAllToDos(): Promise<ToDos[]> {
-    return this.todosService.getAllToDos();
+  async getAllToDos(@Query('cid') cid?: number): Promise<ToDos[]> {
+    return this.todosService.getAllToDos(cid);
   }
 
   @Get(':id')

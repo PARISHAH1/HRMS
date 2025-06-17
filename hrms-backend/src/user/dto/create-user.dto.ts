@@ -1,4 +1,4 @@
-import { IsString, IsDate, IsNumber, IsEmail, IsNotEmpty } from 'class-validator';
+import { IsString, IsDate, IsNumber, IsEmail, IsNotEmpty, IsOptional, Length } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
@@ -11,8 +11,8 @@ export class CreateUserDto {
   Lname: string;
 
   @IsString()
-  @IsNotEmpty()
-  Mname: string;
+  @IsOptional()
+  Mname?: string;
 
   @Transform(({ value }) => new Date(value))
   @IsDate()
@@ -21,6 +21,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
+  @Length(1, 1)
   StatusType: string;
 
   @IsNumber()
@@ -33,7 +34,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  Password: string;
 
   @IsEmail()
   @IsNotEmpty()
@@ -46,4 +47,8 @@ export class CreateUserDto {
   @IsNumber()
   @IsNotEmpty()
   CID: number;
+
+  @IsNumber()
+  @IsOptional()
+  CreatedBy?: number;
 } 

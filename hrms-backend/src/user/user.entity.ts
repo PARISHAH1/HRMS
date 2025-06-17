@@ -11,7 +11,7 @@ export class User {
   @Column({ length: 50 })
   Lname: string;
 
-  @Column({ length: 50 })
+  @Column({ length: 50, nullable: true })
   Mname: string;
 
   @Column({ type: 'datetime' })
@@ -38,15 +38,15 @@ export class User {
   @Column({ type: 'int', width: 10, unsigned: true })
   CID: number;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   created: Date;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updated: Date;
 
-  @Column({ type: 'int', width: 11 })
+  @Column({ type: 'int', width: 11, nullable: true })
   CreatedBy: number;
 
-  @Column({ type: 'int', width: 11 })
+  @Column({ type: 'int', width: 11, nullable: true })
   UpdatedBy: number;
 } 
