@@ -12,14 +12,14 @@ export class UserService {
   constructor() {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    console.log('Received CreateUserDto:', createUserDto);
-    const { Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID } = createUserDto;
+    console.log('Service received:', createUserDto);
+    const { Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, CreatedBy } = createUserDto;
     const encryptedPassword = encrypt(Password);
     const connection = await mysqlPool.getConnection();
     try {
       const [result] = await connection.execute(
-        `INSERT INTO user (Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, created, updated, CreatedBy, UpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)`,
-        [Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, encryptedPassword, Email, Phone, CID, null, null]
+        'INSERT INTO user (Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, created, updated, CreatedBy, UpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)',
+        [Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, encryptedPassword, Email, Phone, CID, CreatedBy, CreatedBy]
       );
 
       const insertedId = (result as any).insertId;
@@ -157,6 +157,44 @@ export class UserService {
     } catch (error) {
       console.error('Error during user login:', error);
       throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async findByCompany(companyId: number): Promise<User[]> {
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [rows] = await connection.execute('SELECT * FROM user WHERE CID = ?', [companyId]);
+      return rows as User[];
+    } catch (error) {
+      console.error(`Error fetching users for company ID ${companyId}:`, error);
+      throw new BadRequestException('Failed to fetch users by company.');
+    } finally {
+      connection.release();
+    }
+  }
+
+  async addTeamMember(createUserDto: CreateUserDto): Promise<User> {
+    const { Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, CreatedBy } = createUserDto;
+    const encryptedPassword = encrypt(Password);
+    const connection = await mysqlPool.getConnection();
+    try {
+      const [result] = await connection.execute(
+        'INSERT INTO user (Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, Password, Email, Phone, CID, created, updated, CreatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)',
+        [Fname, Lname, Mname, DOB, StatusType, DepartmentID, UserType, encryptedPassword, Email, Phone, CID, CreatedBy]
+      );
+      const insertedId = (result as any).insertId;
+      const [rows] = await connection.execute(`SELECT * FROM user WHERE UID = ?`, [insertedId]);
+      const newUser: User = (rows as User[])[0];
+      await connection.execute(
+        `UPDATE user SET CreatedBy = ? WHERE UID = ?`,
+        [newUser.UID, newUser.UID]
+      );
+      return newUser;
+    } catch (error) {
+      console.error('Error adding team member:', error);
+      throw new BadRequestException('Failed to add team member.');
     } finally {
       connection.release();
     }

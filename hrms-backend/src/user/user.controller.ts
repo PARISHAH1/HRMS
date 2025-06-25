@@ -6,6 +6,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../auth/auth.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+
 @Controller('user')
 export class UserController {
   constructor(
@@ -14,9 +15,10 @@ export class UserController {
   ) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
+   async create(@Body() createUserDto: CreateUserDto) {
+     console.log('Controller received:', createUserDto);
+     return this.userService.create(createUserDto);
+   }
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
@@ -43,4 +45,16 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
-} 
+
+  @Get('company/:cid')
+  findByCompany(@Param('cid') cid: string) {
+    return this.userService.findByCompany(Number(cid));
+  }
+
+  @Post('/team-member')
+  async addTeamMember(@Body() createUserDto: CreateUserDto) {
+    console.log('Received DTO:', createUserDto);
+    return this.userService.addTeamMember(createUserDto);
+  }
+}
+
